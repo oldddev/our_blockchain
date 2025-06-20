@@ -11,7 +11,8 @@ class Blockchain {
 
 	std::vector<Block> blocks;
 	std::unordered_map<std::string, TX_OUT> utxo;
-	int diffculty = 2;
+	std::unordered_map<std::string, Transaction> mempool;
+	int diffculty = 1;
 
 	std::string name = "SHAIKALI";
 
@@ -19,24 +20,31 @@ class Blockchain {
 
 	// Genesis block creation
 public:
-
+	// a850c3cac93f501419a2029e087995607368dfc99ba851b9735d1ba8a955a028
 	void create_genesis() {
-		std::cout << my_addr << "\n";
+
 		std::vector<TX_IN> txin{};
-		Transaction coinbase_tx(txin, {TX_OUT{my_addr, 1000}});
+		std::vector<TX_OUT> txout{};
+		txout.push_back(TX_OUT{ my_addr, 5});
+
+		Transaction coinbase_tx(txin, txout);
 		Block genesis_block("0", {coinbase_tx});
-		Miner miner(genesis_block, diffculty);
+		Miner miner(genesis_block, diffculty, my_addr);
+
 		miner.mine(genesis_block.get_block_header());
+
 		if (validate_block(genesis_block)) {
-			std::cout << "[DEBUG] VALID BLOCK\n";
 			blocks.push_back(genesis_block);
 				update_utxo(coinbase_tx);
 		}
 		else {
 			std::cout << "[DEBUG] NOT-VALID BLOCK\n";
 		}
-		std::cout << "[DEBUG] GENESIS BLOCK CREATED: " << genesis_block.get_hash() << std::endl;
 
+	}
+
+	void create_tx() {
+		// mempool.push_back()
 	}
 	bool add_block(Block& block) {
 		if (!validate_block(block)) {
@@ -52,12 +60,11 @@ public:
 		}
 
 		// Verify the block's hash is correct
-		std::string calculated_hash = picosha2::hash256_hex_string(
-			block.get_block_header() + std::to_string(block.get_nonce()));
+		std::string try_hash = picosha2::hash256_hex_string(blocks.back().get_hash() + std::to_string(block.get_timestamp()) + std::to_string(block.get_nonce()));
 
-		if (calculated_hash != block.get_hash()) {
+		if (try_hash != block.get_hash()) {
 			std::cout << "[DEBUG] INVALID BLOCK HASH!\n";
-			std::cout << "[DEBUG] Expected: " << calculated_hash
+			std::cout << "[DEBUG] Expected: " << try_hash
 				<< " Got: " << block.get_hash() << "\n";
 			return false;
 		}
@@ -81,7 +88,7 @@ public:
 		}
 
 		// Validate all transactions
-		for (auto& tx : block.get_transactions()) {
+		for ( Transaction& tx : block.get_transactions() ) {
 			if (!validate_transaction(tx)) {
 				std::cout << "[DEBUG] TRANSACTION VALIDATION FAILED\n";
 				return false;
@@ -140,6 +147,25 @@ public:
 	}
 	int get_difficulty() const {
 		return diffculty;
+	}
+	void get_blocks_hash() {
+		for (auto& block_hash : blocks) {
+			std::cout << "BLOCK_HASH: " << block_hash.get_hash() << "\n";
+		}
+		for (auto& utxo_ : utxo) {
+			std::cout << "UTXO: " << utxo_.second.amount << "\n";
+		}
+		for (size_t i = 0; i < blocks.size(); i++) {
+			std::cout << "__________BLOCK " << i << "__________" << "\n";
+			for (auto& tx : blocks[i].get_transactions()) {
+				std::cout << "TRANSACTION: " << tx.get_outputs()[0].owner << "\n";
+			}
+		}
+	}
+
+	std::vector<Transaction> get_pending_txs() {
+		std::vector<Transaction> temp_txs;
+
 	}
 
 };

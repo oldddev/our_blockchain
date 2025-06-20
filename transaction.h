@@ -31,20 +31,26 @@ class Transaction {
 
 	std::vector<TX_IN> inputs;
 	std::vector<TX_OUT> outputs;
+	uint64_t amount;
 	std::string transaction_hash;
+	uint64_t timestamp;
 
 public:
 
-	Transaction(std::vector<TX_IN>& in,const std::vector<TX_OUT>& out) {
+	Transaction(const std::vector<TX_IN>& in,const std::vector<TX_OUT>& out) {
 
 		this->inputs = in;
 		this->outputs = out;
+
 
 		std::string base;
 		for (const auto& in : inputs) base += in.get_once();
 		for (const auto& out : outputs) base += out.get_once();
 
-		transaction_hash = picosha2::hash256_hex_string(base);
+		auto now = std::chrono::high_resolution_clock::now();
+		timestamp = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+
+		transaction_hash = picosha2::hash256_hex_string(base + std::to_string(timestamp));
 
 	}
 
